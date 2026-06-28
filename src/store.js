@@ -33,6 +33,12 @@ export const useCarStore = create(
       
       activeCategory: 'paint', // controls bottom dock and right panel context
       setActiveCategory: (cat) => set({ activeCategory: cat }),
+
+      // --- AUTHENTICATION STATE ---
+      user: null,
+      showLoginModal: false,
+      setUser: (user) => set({ user }),
+      setShowLoginModal: (show) => set({ showLoginModal: show }),
       
       selectedModel: 'bugatti', // 'bugatti', 'ferrari', 'porsche', 'mercedes', 'mclaren'
       setSelectedModel: (model) => set({ 
@@ -122,7 +128,8 @@ export const useCarStore = create(
         bodyColor: state.bodyColor,
         interiorColor: state.interiorColor,
         wheelColor: state.wheelColor,
-        cameraPreset: state.cameraPreset
+        cameraPreset: state.cameraPreset,
+        user: state.user
       }),
     }
   )

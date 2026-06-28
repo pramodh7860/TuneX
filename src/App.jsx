@@ -5,6 +5,7 @@ import BottomDock from './components/UI/BottomDock';
 import ContextPanel from './components/UI/ContextPanel';
 import Sidebar from './components/UI/Sidebar';
 import PriceDisplay from './components/UI/PriceDisplay';
+import LoginPage from './components/UI/LoginPage';
 
 function App() {
   return (
@@ -22,8 +23,12 @@ function App() {
         <BottomDock />
         <PriceDisplay />
       </div>
+
+      {/* Auth Screen Overlay */}
+      <LoginPage />
     </div>
   );
 }
 
 export default App;
+
