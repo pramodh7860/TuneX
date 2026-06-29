@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCarStore } from '../../store';
+import { Loader2, Check, X } from 'lucide-react';
 
 export default function PriceDisplay() {
   useCarStore(state => state.selectedEngine);
@@ -9,6 +10,26 @@ export default function PriceDisplay() {
   
   const stats = useCarStore.getState().getComputedStats();
   
+  const user = useCarStore(state => state.user);
+  const saveCarConfigToDb = useCarStore(state => state.saveCarConfigToDb);
+  const setShowLoginModal = useCarStore(state => state.setShowLoginModal);
+  
+  const [saveStatus, setSaveStatus] = React.useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
+  const [errorMessage, setErrorMessage] = React.useState('');
+
+  const handleSave = async () => {
+    setSaveStatus('loading');
+    const res = await saveCarConfigToDb();
+    if (res.success) {
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } else {
+      setSaveStatus('error');
+      setErrorMessage(res.error || 'Failed to save');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
+
   let scoreColor = 'text-white';
   if (stats.totalScore < 40) scoreColor = 'text-red-500';
   else if (stats.totalScore < 70) scoreColor = 'text-yellow-500';
@@ -34,6 +55,41 @@ export default function PriceDisplay() {
         >
           {stats.price}
         </span>
+      </div>
+
+      {/* Save Build Button */}
+      <div className="mt-2 min-w-[160px]">
+        {user ? (
+          <button
+            onClick={handleSave}
+            disabled={saveStatus === 'loading'}
+            className={`w-full flex items-center justify-center gap-2 px-5 py-3 text-[9px] font-bold tracking-widest uppercase rounded-full border transition-all duration-300 ${
+              saveStatus === 'loading'
+                ? 'border-white/10 bg-white/5 text-white/50 cursor-not-allowed'
+                : saveStatus === 'success'
+                ? 'border-green-500 bg-green-500/10 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.25)]'
+                : saveStatus === 'error'
+                ? 'border-red-500 bg-red-500/10 text-red-500'
+                : 'border-white/10 hover:border-gold-500 hover:text-gold-500 hover:bg-gold-500/5 bg-white/5 text-white/80'
+            }`}
+          >
+            {saveStatus === 'loading' && <Loader2 className="animate-spin" size={12} />}
+            {saveStatus === 'success' && <Check size={12} />}
+            {saveStatus === 'error' && <X size={12} />}
+            
+            {saveStatus === 'loading' && 'Locking Build...'}
+            {saveStatus === 'success' && 'Build Secured'}
+            {saveStatus === 'error' && 'Secure Failed'}
+            {saveStatus === 'idle' && 'Secure to Garage'}
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-[9px] font-bold tracking-widest uppercase rounded-full border border-white/5 hover:border-white/20 hover:bg-white/5 bg-white/0 text-white/40 hover:text-white/70 transition-all duration-300"
+          >
+            Sign In to Save Build
+          </button>
+        )}
       </div>
 
     </div>

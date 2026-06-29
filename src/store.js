@@ -37,8 +37,103 @@ export const useCarStore = create(
       // --- AUTHENTICATION STATE ---
       user: null,
       showLoginModal: false,
-      setUser: (user) => set({ user }),
+      setUser: (user) => {
+        if (user === null) {
+          set({
+            user: null,
+            selectedModel: 'bugatti',
+            selectedEngine: 'engine_0',
+            engine: 'engine_0',
+            selectedWheels: 'wheels_0',
+            selectedAero: 'aero_0',
+            selectedWeightSetup: 'weight_0',
+            bodyColor: '#111111',
+            interiorColor: '#965b32',
+            wheelColor: '#e5e7eb',
+            isWheelRotating: false,
+            cameraPreset: null,
+            activeCategory: 'paint',
+          });
+        } else {
+          set({ user });
+          get().applyCarConfig(user.savedCarConfig || {});
+        }
+      },
+      logout: () => {
+        set({
+          user: null,
+          selectedModel: 'bugatti',
+          selectedEngine: 'engine_0',
+          engine: 'engine_0',
+          selectedWheels: 'wheels_0',
+          selectedAero: 'aero_0',
+          selectedWeightSetup: 'weight_0',
+          bodyColor: '#111111',
+          interiorColor: '#965b32',
+          wheelColor: '#e5e7eb',
+          isWheelRotating: false,
+          cameraPreset: null,
+          activeCategory: 'paint',
+        });
+      },
       setShowLoginModal: (show) => set({ showLoginModal: show }),
+
+      applyCarConfig: (config) => {
+        if (!config) return;
+        set({
+          selectedModel: config.selectedModel || 'bugatti',
+          selectedEngine: config.selectedEngine || 'engine_0',
+          engine: config.selectedEngine || 'engine_0',
+          selectedWheels: config.selectedWheels || 'wheels_0',
+          selectedAero: config.selectedAero || 'aero_0',
+          selectedWeightSetup: config.selectedWeightSetup || 'weight_0',
+          bodyColor: config.bodyColor || '#111111',
+          interiorColor: config.interiorColor || '#965b32',
+          wheelColor: config.wheelColor || '#e5e7eb',
+        });
+      },
+
+      saveCarConfigToDb: async () => {
+        const state = get();
+        if (!state.user) return { success: false, error: 'User not signed in' };
+
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000';
+        const config = {
+          selectedModel: state.selectedModel,
+          selectedEngine: state.selectedEngine,
+          selectedWheels: state.selectedWheels,
+          selectedAero: state.selectedAero,
+          selectedWeightSetup: state.selectedWeightSetup,
+          bodyColor: state.bodyColor,
+          interiorColor: state.interiorColor,
+          wheelColor: state.wheelColor
+        };
+
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/auth/save-car`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: state.user.email,
+              config
+            })
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to save configuration');
+
+          // Update local user state
+          const updatedUser = {
+            ...state.user,
+            savedCarConfig: config
+          };
+          set({ user: updatedUser });
+          return { success: true };
+        } catch (err) {
+          console.error('Save configuration error:', err);
+          return { success: false, error: err.message };
+        }
+      },
       
       selectedModel: 'bugatti', // 'bugatti', 'ferrari', 'porsche', 'mercedes', 'mclaren'
       setSelectedModel: (model) => set({ 

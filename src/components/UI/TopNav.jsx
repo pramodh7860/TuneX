@@ -9,7 +9,7 @@ export default function TopNav() {
   
   const user = useCarStore(state => state.user);
   const setShowLoginModal = useCarStore(state => state.setShowLoginModal);
-  const setUser = useCarStore(state => state.setUser);
+  const logout = useCarStore(state => state.logout);
 
   return (
     <div className="absolute top-0 left-0 w-full p-8 md:p-12 flex justify-between items-start pointer-events-none z-50">
@@ -41,7 +41,7 @@ export default function TopNav() {
                 <p className="text-[10px] text-white/80 truncate font-light">{user.email}</p>
               </div>
               <button 
-                onClick={() => setUser(null)}
+                onClick={logout}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left text-white/60 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-[10px] tracking-widest uppercase font-bold"
               >
                 <LogOut size={12} className="text-red-500/80" />

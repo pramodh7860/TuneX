@@ -21,7 +21,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://tune-x-snowy.vercel.ap
 // CORS — allow frontend origin
 app.use(cors({
   origin: [FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000'],
-  methods: ['POST', 'GET'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 
 app.use(express.json());
@@ -139,7 +139,11 @@ const userSchema = new mongoose.Schema({
     of: mongoose.Schema.Types.Mixed,
     default: {}
   }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  toObject: { flattenMaps: true },
+  toJSON: { flattenMaps: true }
+});
 
 // Pre-save hook to hash password securely
 userSchema.pre('save', async function(next) {
