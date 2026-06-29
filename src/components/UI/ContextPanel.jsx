@@ -5,6 +5,7 @@ import { cars } from '../../data/cars';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, Environment, Center } from '@react-three/drei';
 import { MODEL_CONFIG } from '../../config/models';
+import { Check, X } from 'lucide-react';
 
 const colorsExternal = [
   { name: 'Nero Nemesis', value: '#111111' },
@@ -55,6 +56,26 @@ export default function ContextPanel() {
 
   const selectedWeight = useCarStore(state => state.selectedWeightSetup);
   const setSelectedWeight = useCarStore(state => state.setSelectedWeightSetup);
+
+  const user = useCarStore(state => state.user);
+  const saveCarConfigToDb = useCarStore(state => state.saveCarConfigToDb);
+  const setShowLoginModal = useCarStore(state => state.setShowLoginModal);
+  
+  const [saveStatus, setSaveStatus] = React.useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
+  const [errorMessage, setErrorMessage] = React.useState('');
+
+  const handleSave = async () => {
+    setSaveStatus('loading');
+    const res = await saveCarConfigToDb();
+    if (res.success) {
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } else {
+      setSaveStatus('error');
+      setErrorMessage(res.error || 'Failed to save');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
 
   // Modular Renders
   let title = 'Tuning Context';
@@ -110,11 +131,70 @@ export default function ContextPanel() {
 
         {/* Live Segmented Performance Dashboard */}
         <div>
-          <h3 className="text-[10px] uppercase tracking-[0.25em] text-white/40 mb-5 font-bold">Telemetry</h3>
+          <div className="flex justify-between items-center mb-5 border-b border-white/5 pb-2">
+            <h3 className="text-[10px] uppercase tracking-[0.25em] text-white/40 font-bold">Telemetry</h3>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-[0.25em] text-white/30 font-bold">Build Score:</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 ${
+                stats.totalScore < 40 ? 'text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]' :
+                stats.totalScore < 70 ? 'text-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.2)]' :
+                'text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.2)]'
+              }`}>
+                {stats.totalScore}/100
+              </span>
+            </div>
+          </div>
           <SegmentedGauge label="Velocity (Top Speed)" percent={stats.topSpeedPercent} value={`${stats.topSpeedValue}`} />
           <SegmentedGauge label="0-60 Sprint" percent={stats.zeroToSixtyPercent} value={`${stats.zeroToSixtyValue}`} />
           <SegmentedGauge label="Kinetic Thrust" percent={stats.accelerationPercent} value={`${stats.accelerationValue}`} />
           <SegmentedGauge label="Mechanical Grip" percent={stats.gripPercent} value={`${stats.gripValue}`} />
+        </div>
+
+        {/* Separator */}
+        <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent my-6" />
+
+        {/* Cost & Save Actions Row */}
+        <div className="flex justify-between items-center gap-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[9px] uppercase tracking-[0.25em] text-white/40 font-bold">Total Cost</span>
+            <span className="text-xl md:text-2xl font-light text-gold-500 tracking-wider drop-shadow-[0_0_15px_rgba(212,175,55,0.4)]">
+              {stats.price}
+            </span>
+          </div>
+
+          <div className="min-w-[170px]">
+            {user ? (
+              <button
+                onClick={handleSave}
+                disabled={saveStatus === 'loading'}
+                className={`w-full flex items-center justify-center gap-2 px-5 py-3 text-[9px] font-bold tracking-widest uppercase rounded-full border transition-all duration-300 ${
+                  saveStatus === 'loading'
+                    ? 'border-white/10 bg-white/5 text-white/50 cursor-not-allowed'
+                    : saveStatus === 'success'
+                    ? 'border-green-500 bg-green-500/10 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.25)]'
+                    : saveStatus === 'error'
+                    ? 'border-red-500 bg-red-500/10 text-red-500'
+                    : 'border-white/10 hover:border-gold-500 hover:text-gold-500 hover:bg-gold-500/5 bg-white/5 text-white/80'
+                }`}
+              >
+                {saveStatus === 'loading' && <Loader2 className="animate-spin" size={12} />}
+                {saveStatus === 'success' && <Check size={12} />}
+                {saveStatus === 'error' && <X size={12} />}
+                
+                {saveStatus === 'loading' && 'Locking Build...'}
+                {saveStatus === 'success' && 'Build Secured'}
+                {saveStatus === 'error' && 'Secure Failed'}
+                {saveStatus === 'idle' && 'Secure to Garage'}
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 text-[9px] font-bold tracking-widest uppercase rounded-full border border-white/5 hover:border-white/20 hover:bg-white/5 bg-white/0 text-white/40 hover:text-white/70 transition-all duration-300"
+              >
+                Sign In to Save Build
+              </button>
+            )}
+          </div>
         </div>
         
       </div>

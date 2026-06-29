@@ -7,13 +7,13 @@ export default function PriceDisplay() {
   useCarStore(state => state.selectedWheels);
   useCarStore(state => state.selectedAero);
   useCarStore(state => state.selectedWeightSetup);
-  
+
   const stats = useCarStore.getState().getComputedStats();
-  
+
   const user = useCarStore(state => state.user);
   const saveCarConfigToDb = useCarStore(state => state.saveCarConfigToDb);
   const setShowLoginModal = useCarStore(state => state.setShowLoginModal);
-  
+
   const [saveStatus, setSaveStatus] = React.useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
   const [errorMessage, setErrorMessage] = React.useState('');
 
@@ -37,7 +37,7 @@ export default function PriceDisplay() {
 
   return (
     <div className="absolute bottom-0 left-0 p-8 md:p-12 flex flex-col gap-5 pointer-events-auto z-50">
-      
+
       {/* Configuration Score */}
       <div className="flex flex-col gap-1 group">
         <span className="text-white/40 text-[9px] tracking-[0.2em] uppercase font-bold group-hover:text-white/70 transition-colors">Total Configuration</span>
@@ -49,7 +49,7 @@ export default function PriceDisplay() {
       {/* Build Total Cost */}
       <div className="flex flex-col gap-1 group relative">
         <span className="text-white/40 text-[9px] tracking-[0.2em] uppercase font-bold group-hover:text-white/70 transition-colors">Total Cost</span>
-        <span 
+        <span
           key={stats.price}
           className="text-2xl md:text-3xl font-light text-gold-500 tracking-wider drop-shadow-[0_0_15px_rgba(212,175,55,0.6)] animate-in fade-in zoom-in duration-300"
         >
@@ -63,20 +63,19 @@ export default function PriceDisplay() {
           <button
             onClick={handleSave}
             disabled={saveStatus === 'loading'}
-            className={`w-full flex items-center justify-center gap-2 px-5 py-3 text-[9px] font-bold tracking-widest uppercase rounded-full border transition-all duration-300 ${
-              saveStatus === 'loading'
-                ? 'border-white/10 bg-white/5 text-white/50 cursor-not-allowed'
-                : saveStatus === 'success'
+            className={`w-full flex items-center justify-center gap-2 px-5 py-3 text-[9px] font-bold tracking-widest uppercase rounded-full border transition-all duration-300 ${saveStatus === 'loading'
+              ? 'border-white/10 bg-white/5 text-white/50 cursor-not-allowed'
+              : saveStatus === 'success'
                 ? 'border-green-500 bg-green-500/10 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.25)]'
                 : saveStatus === 'error'
-                ? 'border-red-500 bg-red-500/10 text-red-500'
-                : 'border-white/10 hover:border-gold-500 hover:text-gold-500 hover:bg-gold-500/5 bg-white/5 text-white/80'
-            }`}
+                  ? 'border-red-500 bg-red-500/10 text-red-500'
+                  : 'border-white/10 hover:border-gold-500 hover:text-gold-500 hover:bg-gold-500/5 bg-white/5 text-white/80'
+              }`}
           >
             {saveStatus === 'loading' && <Loader2 className="animate-spin" size={12} />}
             {saveStatus === 'success' && <Check size={12} />}
             {saveStatus === 'error' && <X size={12} />}
-            
+
             {saveStatus === 'loading' && 'Locking Build...'}
             {saveStatus === 'success' && 'Build Secured'}
             {saveStatus === 'error' && 'Secure Failed'}

@@ -4,7 +4,6 @@ import TopNav from './components/UI/TopNav';
 import BottomDock from './components/UI/BottomDock';
 import ContextPanel from './components/UI/ContextPanel';
 import Sidebar from './components/UI/Sidebar';
-import PriceDisplay from './components/UI/PriceDisplay';
 import LoginPage from './components/UI/LoginPage';
 
 function App() {
@@ -21,7 +20,6 @@ function App() {
         <Sidebar />
         <ContextPanel />
         <BottomDock />
-        <PriceDisplay />
       </div>
 
       {/* Auth Screen Overlay */}
