@@ -3,6 +3,9 @@ import { useCarStore } from '../../store';
 import { Mail, Lock, User, Eye, EyeOff, X, ShieldAlert, CheckCircle2, Loader2, Phone } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'https://tune-x-henna.vercel.app';
+const GOOGLE_REDIRECT_URI = `${FRONTEND_URL}/google-callback.html`;
 
 export default function LoginPage() {
   const showLoginModal = useCarStore(state => state.showLoginModal);
@@ -51,8 +54,13 @@ export default function LoginPage() {
   // Listen for Google login message from popup window
   useEffect(() => {
     const handleMessage = async (event) => {
-      if (event.data && event.data.type === 'GOOGLE_AUTH_SUCCESS') {
-        const { profile } = event.data;
+      if (event.data && event.data.type === 'GOOGLE_AUTH_CODE') {
+        const { code, error: authError } = event.data;
+        if (authError) {
+          setError(authError);
+          return;
+        }
+
         setLoading(true);
         setError('');
         setSuccess('');
@@ -61,18 +69,17 @@ export default function LoginPage() {
           const res = await fetch(`${BACKEND_URL}/api/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profile)
+            body: JSON.stringify({ code })
           });
 
+          const data = await res.json();
           if (!res.ok) {
-            const errData = await res.json();
-            throw new Error(errData.error || 'Google login failed');
+            throw new Error(data.error || 'Google login failed');
           }
 
-          const userData = await res.json();
-          setUser(userData);
-          
-          if (userData.profileCompleted === false) {
+          setUser(data);
+
+          if (data.profileCompleted === false) {
             setSuccess('Google verified. Initializing profile...');
             setTimeout(() => {
               setView('profile_completion');
@@ -214,15 +221,27 @@ export default function LoginPage() {
     }
   };
 
-  // Google OAuth Popup Simulation
   const handleGoogleLogin = () => {
+    if (!GOOGLE_CLIENT_ID) {
+      setError('Google Client ID is not configured. Set VITE_GOOGLE_CLIENT_ID in your environment.');
+      return;
+    }
+
     const width = 500;
     const height = 650;
     const left = window.screen.width / 2 - width / 2;
     const top = window.screen.height / 2 - height / 2;
 
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
+    authUrl.searchParams.set('redirect_uri', GOOGLE_REDIRECT_URI);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', 'openid email profile');
+    authUrl.searchParams.set('prompt', 'select_account');
+    authUrl.searchParams.set('include_granted_scopes', 'true');
+
     const popup = window.open(
-      '',
+      authUrl.toString(),
       'GoogleSignIn',
       `width=${width},height=${height},left=${left},top=${top},status=no,resizable=no,scrollbars=yes`
     );
@@ -231,8 +250,9 @@ export default function LoginPage() {
       setError('Popup blocker active. Please allow popups for Google sign-in.');
       return;
     }
+  };
 
-    const popupHtml = `
+  return (`}
       <!DOCTYPE html>
       <html>
       <head>

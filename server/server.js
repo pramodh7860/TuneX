@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { OAuth2Client } = require('google-auth-library');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -17,6 +18,9 @@ mongoose.connect(MONGODB_URI)
 // Environment variables
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://tune-x-snowy.vercel.app';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${FRONTEND_URL}/google-callback.html`;
 
 // CORS — allow frontend origin
 app.use(cors({
@@ -236,18 +240,66 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Google sign-in/up endpoint
+// Google sign-in/up endpoint (OAuth Authorization Code exchange)
 app.post('/api/auth/google', async (req, res) => {
   try {
-    const { email, name, avatar } = req.body;
-    if (!email || !name) {
-      return res.status(400).json({ error: 'Email and name are required' });
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ error: 'Google authorization code is required' });
     }
 
-    let user = await User.findOne({ email: email.toLowerCase() });
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.status(500).json({ error: 'Google client credentials are not configured' });
+    }
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: GOOGLE_REDIRECT_URI,
+        grant_type: 'authorization_code'
+      })
+    });
+
+    if (!tokenResponse.ok) {
+      const errBody = await tokenResponse.text();
+      console.error('Google token exchange failed:', tokenResponse.status, errBody);
+      return res.status(400).json({ error: 'Failed to exchange Google authorization code' });
+    }
+
+    const tokenData = await tokenResponse.json();
+    const idToken = tokenData.id_token;
+    if (!idToken) {
+      return res.status(400).json({ error: 'Google ID token not returned' });
+    }
+
+    const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({ error: 'Invalid Google token payload' });
+    }
+
+    if (payload.email_verified === false) {
+      return res.status(400).json({ error: 'Google email is not verified' });
+    }
+
+    const email = payload.email.toLowerCase();
+    const name = payload.name || email.split('@')[0];
+    const avatar = payload.picture || '';
+
+    let user = await User.findOne({ email });
     if (!user) {
       user = new User({
-        email: email.toLowerCase(),
+        email,
         name,
         avatar,
         provider: 'google',
@@ -255,6 +307,7 @@ app.post('/api/auth/google', async (req, res) => {
       });
     } else {
       user.provider = 'google';
+      user.name = name;
       if (avatar) user.avatar = avatar;
     }
 
