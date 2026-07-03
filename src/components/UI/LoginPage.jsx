@@ -4,7 +4,7 @@ import { Mail, Lock, User, Eye, EyeOff, X, ShieldAlert, CheckCircle2, Loader2, P
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'https://tune-x-henna.vercel.app';
+const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 const GOOGLE_REDIRECT_URI = `${FRONTEND_URL}/google-callback.html`;
 
 export default function LoginPage() {
@@ -241,7 +241,7 @@ export default function LoginPage() {
     authUrl.searchParams.set('include_granted_scopes', 'true');
 
     const popup = window.open(
-      authUrl.toString(),
+      'about:blank',
       'GoogleSignIn',
       `width=${width},height=${height},left=${left},top=${top},status=no,resizable=no,scrollbars=yes`
     );
@@ -250,6 +250,8 @@ export default function LoginPage() {
       setError('Popup blocker active. Please allow popups for Google sign-in.');
       return;
     }
+
+    popup.location.href = authUrl.toString();
   };
 
   return (
